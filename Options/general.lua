@@ -273,9 +273,7 @@ local function SelectGlobalSettingsTab(tabWidget, scrollFrame, group, options)
 		pressOverlay:SetValue(options.pressOverlay)
 		pressOverlay:SetCallback("OnValueChanged", function(_, _, value)
 			options.pressOverlay = value
-			if value then
-				SCM:InitializePressOverlay()
-			end
+			SCM:ApplyPressOverlayOptions()
 		end)
 		skinningSettings:AddChild(pressOverlay)
 

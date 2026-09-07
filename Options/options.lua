@@ -357,6 +357,8 @@ function SCM:ApplyAttributeDriver()
 end
 
 function SCM:ApplyOptions()
+	self:ApplyPressOverlayOptions()
+
 	if InCombatLockdown() or self.appliedOptions then
 		return
 	end

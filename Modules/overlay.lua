@@ -1,12 +1,43 @@
 local SCM = select(2, ...)
 local Cache = SCM.Cache
-local LibActionButton = LibStub("LibActionButton-1.0-ElvUI", true) or LibStub("LibActionButton-1.0", true)
 
 local blizzardActionButtonHooksSet
 local ellesmereUIActionButtonHooksSet
-local elvUIActionButtonHooksSet
+local hookedActionButtonLibraries = {}
+local pressedChildrenByButtonKey = {}
+local pressCountsByChild = {}
 
-local function SetPressOverlay(action, shown)
+function SCM:ClearChildPressOverlay(child)
+	if not pressCountsByChild[child] then
+		return
+	end
+
+	for key, pressedChild in pairs(pressedChildrenByButtonKey) do
+		if pressedChild == child then
+			pressedChildrenByButtonKey[key] = nil
+		end
+	end
+	pressCountsByChild[child] = nil
+	child.SCMPressOverlay:Hide()
+end
+
+local function ReleasePressOverlay(key)
+	local child = pressedChildrenByButtonKey[key]
+	if not child then
+		return
+	end
+
+	pressedChildrenByButtonKey[key] = nil
+	local count = pressCountsByChild[child] - 1
+	if count > 0 then
+		pressCountsByChild[child] = count
+	else
+		pressCountsByChild[child] = nil
+		child.SCMPressOverlay:Hide()
+	end
+end
+
+local function GetChildForAction(action)
 	local actionType, actionID, actionSubType = GetActionInfo(action)
 
 	local spellID
@@ -19,17 +50,39 @@ local function SetPressOverlay(action, shown)
 	if spellID then
 		local child = Cache.cachedChildsBySpellID[spellID]
 		if child and child.SCMPressOverlay then
-			child.SCMPressOverlay:SetShown(shown)
+			return child
 		end
 	end
 end
 
-local function OnLABActionButtonPostClick(button, _, down)
-	if not SCM.options.pressOverlay or button._state_type ~= "action" then
+local function PressOverlay(key, action)
+	if not action then
 		return
 	end
 
-	SetPressOverlay(button._state_action, down)
+	if pressedChildrenByButtonKey[key] then
+		return
+	end
+
+	local child = GetChildForAction(action)
+	if not child then
+		return
+	end
+
+	pressedChildrenByButtonKey[key] = child
+	pressCountsByChild[child] = (pressCountsByChild[child] or 0) + 1
+	child.SCMPressOverlay:Show()
+end
+
+local function OnLABActionButtonPostClick(button, _, down)
+	if down then
+		if SCM.db.profile.options.pressOverlay and button._state_type == "action" then
+			PressOverlay(button, button._state_action)
+		end
+		return
+	end
+
+	ReleasePressOverlay(button)
 end
 
 local function HookLABActionButton(button)
@@ -45,19 +98,16 @@ local function OnLABActionButtonCreated(_, button)
 	HookLABActionButton(button)
 end
 
-local function SetLABActionButtonHooks()
-	if elvUIActionButtonHooksSet then
+local function SetLABActionButtonHooks(library)
+	if not library or hookedActionButtonLibraries[library] then
 		return
 	end
 
-	elvUIActionButtonHooksSet = true
-
-	if LibActionButton then
-		LibActionButton.RegisterCallback(SCM, "OnButtonCreated", OnLABActionButtonCreated)
-		for button in pairs(LibActionButton.buttonRegistry) do
-			HookLABActionButton(button)
-		end
+	library.RegisterCallback(SCM, "OnButtonCreated", OnLABActionButtonCreated)
+	for button in pairs(library.buttonRegistry) do
+		HookLABActionButton(button)
 	end
+	hookedActionButtonLibraries[library] = true
 end
 
 local function SetBlizzardActionButtonHooks()
@@ -68,58 +118,46 @@ local function SetBlizzardActionButtonHooks()
 	blizzardActionButtonHooksSet = true
 
 	hooksecurefunc("ActionButtonDown", function(id)
-		if not SCM.options.pressOverlay then
+		if not SCM.db.profile.options.pressOverlay then
 			return
 		end
 
 		local actionButton = GetActionButtonForID(id)
 		if actionButton then
-			SetPressOverlay(actionButton.action, true)
+			PressOverlay(id, actionButton.action)
 		end
 	end)
 
 	hooksecurefunc("ActionButtonUp", function(id)
-		if not SCM.options.pressOverlay then
-			return
-		end
-		local actionButton = GetActionButtonForID(id)
-		if actionButton then
-			SetPressOverlay(actionButton.action, false)
-		end
+		ReleasePressOverlay(id)
 	end)
 
 	hooksecurefunc("MultiActionButtonDown", function(barName, id)
-		if not SCM.options.pressOverlay then
+		if not SCM.db.profile.options.pressOverlay then
 			return
 		end
 
 		local bar = _G[barName]
 		if bar then
-			SetPressOverlay(bar.actionButtons[id].action, true)
+			PressOverlay(barName .. id, bar.actionButtons[id].action)
 		end
 	end)
 
 	hooksecurefunc("MultiActionButtonUp", function(barName, id)
-		if not SCM.options.pressOverlay then
-			return
-		end
-
-		local bar = _G[barName]
-		if bar then
-			SetPressOverlay(bar.actionButtons[id].action, false)
-		end
+		ReleasePressOverlay(barName .. id)
 	end)
 end
 
 local function OnEllesmereUIActionButtonPress(button, down)
-	if not SCM.options.pressOverlay then
+	if down then
+		if SCM.db.profile.options.pressOverlay then
+			local action = button:GetAttribute("action") or button.action
+			PressOverlay(button, action)
+		end
 		return
 	end
 
-	local action = button:GetAttribute("action") or button.action
-	if action then
-		SetPressOverlay(action, down)
-	end
+	ReleasePressOverlay(button)
 end
 
 local function SetEllesmereUIActionButtonHooks()
@@ -133,12 +171,22 @@ local function SetEllesmereUIActionButtonHooks()
 	end
 end
 
-function SCM:InitializePressOverlay()
-	if not SCM.options.pressOverlay then
+local function ClearPressOverlays()
+	for child in pairs(pressCountsByChild) do
+		child.SCMPressOverlay:Hide()
+	end
+	wipe(pressCountsByChild)
+	wipe(pressedChildrenByButtonKey)
+end
+
+function SCM:ApplyPressOverlayOptions()
+	if not SCM.db.profile.options.pressOverlay then
+		ClearPressOverlays()
 		return
 	end
 
-	SetLABActionButtonHooks()
+	SetLABActionButtonHooks(LibStub("LibActionButton-1.0", true))
+	SetLABActionButtonHooks(LibStub("LibActionButton-1.0-ElvUI", true))
 	SetBlizzardActionButtonHooks()
 
 	if C_AddOns.IsAddOnLoaded("EllesmereUIActionBars") then

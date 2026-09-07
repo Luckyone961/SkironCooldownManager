@@ -19,6 +19,7 @@ local function OnSetAlpha(self)
 end
 function Icons.HideChild(child)
 	SCM.StopChildGlows(child)
+	SCM:ClearChildPressOverlay(child)
 
 	if child.SCMSpellID and not child.SCMBuffOptions and not child.SCMBuffBar then
 		Cache.cachedChildsBySpellID[child.SCMSpellID] = nil
@@ -143,6 +144,8 @@ local function OnShow(child)
 end
 
 local function OnHide(child)
+	SCM:ClearChildPressOverlay(child)
+
 	local shouldRefresh = child.SCMGroup and (child.SCMChanged or child.SCMBuffBar)
 	if shouldRefresh then
 		if child.SCMBuffBar then

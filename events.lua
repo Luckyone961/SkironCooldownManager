@@ -35,7 +35,6 @@ function SCM:PLAYER_ENTERING_WORLD(isInitialLogin, isReload)
 		SCM.PrepareCooldownViewerData()
 		SCM:CreateAllAnchorFrames()
 		SCM:ApplyOptions()
-		SCM:InitializePressOverlay()
 
 		SCM:SetHooks()
 		SCM:InitializeResourceBars()

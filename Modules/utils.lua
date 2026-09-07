@@ -167,6 +167,7 @@ function Utils.ResetChildSCMState(child)
 	end
 
 	SCM.StopChildGlows(child)
+	SCM:ClearChildPressOverlay(child)
 	if child.SCMActiveStateBorders and SCM.States and SCM.States.HideAllStateBorders then
 		SCM.States.HideAllStateBorders(child)
 	end
