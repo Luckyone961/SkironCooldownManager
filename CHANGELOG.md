@@ -18,3 +18,11 @@ Fixes:
 - Improve icon dragging
 - Fix some lua errors
 - Fix resource bar hide settings
+- Move buff bars and icons to their correct category and recheck on spec change
+- Fix stuck anchor highlights
+- Reuse anchor frames and the search popup
+- Improve duplicate icon detection
+- Fix Blizzard potion and trinket icons being hidden in the options
+- Use the human form resource bar settings for Tree Form
+- Fix keypress overlay support for ElvUI and other LibActionButton addons
+- Fix stuck keypress overlays and update their settings when switching profiles
