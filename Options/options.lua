@@ -368,7 +368,7 @@ function SCM:ApplyOptions()
 	self:SetHideWhenInactive(options.hideBuffsWhenInactive)
 	self:SetBuffBarHideWhenInactive(options.disableBuffBarHideWhenInactive)
 	self:SetBuffBarContent(options.buffBarContent)
-	self:ApplyAttributeDriver(options.hideWhileMounted)
+	self:ApplyAttributeDriver()
 	self.Cooldowns:ApplyFormatterSettings()
 end
 
@@ -536,6 +536,7 @@ function SCM.GetDisabledCooldowns()
 			local categoryID = cooldownInfo.category
 			local isCooldownSpell = IsCooldownSpell(categoryID)
 			local isCooldownBuff = IsCooldownBuff(categoryID)
+
 			if IsDisabled(data.category) or (isCooldownBuff and IsInWrongCategory(data.category, anchorGroup)) then
 				local targetCategoryID
 				if isCooldownSpell then

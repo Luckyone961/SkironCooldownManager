@@ -399,11 +399,17 @@ function CDMOptions.SelectRow(widget, rowWidget, parentWidget, anchorOptions, sc
 		cooldownSettings:SetTitle("Cooldown Font")
 		widget:AddChild(cooldownSettings)
 
+		local fontSize = options.cooldownFontSize or 0.6
+		if fontSize <= 1 then
+			local iconSize = min(rowConfig.iconWidth or rowConfig.size or 47, rowConfig.iconHeight or rowConfig.size or 47)
+			fontSize = max(1, floor(fontSize * iconSize + 0.5))
+		end
+
 		local fontSize = AceGUI:Create("Slider")
 		fontSize:SetRelativeWidth(0.5)
 		fontSize:SetSliderValues(1, 50, 1)
 		fontSize:SetLabel("Font Size")
-		fontSize:SetValue(rowConfig.cooldownFontSize or ((options.cooldownFontSize or 0.6) * (rowConfig.iconWidth or rowConfig.size)))
+		fontSize:SetValue(rowConfig.cooldownFontSize or fontSize)
 		fontSize:SetCallback("OnValueChanged", function(self, event, value)
 			rowConfig.cooldownFontSize = value
 			Options.ApplyModeConfigUpdate(anchorIndex, mode)

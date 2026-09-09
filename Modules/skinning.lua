@@ -113,7 +113,7 @@ local function ApplyCooldownFont(cooldownFrame, options)
 				local fontPath = LSM:Fetch("font", config and config.cooldownFont or options.cooldownFont)
 				local percentageFontSize = config and config.cooldownFontSize or options.cooldownFontSize
 				local fontSize
-				if percentageFontSize > 1 then
+				if (config and config == parent.SCMRowConfig and config.cooldownFontSize) or percentageFontSize > 1 then
 					fontSize = percentageFontSize
 				else
 					fontSize = max(1, floor(iconSize * percentageFontSize + 0.5))
@@ -345,6 +345,7 @@ function SCM:SkinChild(child, childConfig)
 	end
 
 	local isOptionsOpen = self.OptionsFrame and self.OptionsFrame:IsShown()
+	local refreshTextStyle = not child.SCMSkinned or isOptionsOpen or not child.SCMPreviousRowConfig or child.SCMPreviousRowConfig ~= child.SCMRowConfig
 	if not child.SCMSkinned or isOptionsOpen then
 		child.SCMSkinned = true
 
@@ -430,8 +431,16 @@ function SCM:SkinChild(child, childConfig)
 		end
 
 		ApplyZoomSettings(child, options)
-		ApplyChargeAndApplicationStyle(child, options, LSM:Fetch("font", options.chargeFont))
 		ApplyCooldownStyle(child, options, childConfig)
+	end
+
+	if refreshTextStyle then
+		if child.Cooldown then
+			ApplyCooldownFont(child.Cooldown, options)
+		end
+
+		ApplyChargeAndApplicationStyle(child, options, LSM:Fetch("font", options.chargeFont))
+		child.SCMPreviousRowConfig = child.SCMRowConfig
 	end
 
 	SetupCooldownStyleHooks(child)
